@@ -92,11 +92,11 @@ onMount() {
 | `onCreate()` | Instance created, props available |
 | `onMount()` | Component mounted. Return a cleanup function (optional). |
 | `onUnmount()` | Component unmounting. Called after `onMount` cleanup (optional). |
-| `render()` | Standard React render |
+| `render()` | On mount and updates. Return JSX. |
 
 ### Props Reactivity
 
-`this.props` is reactive—MobX tracks access automatically. Use `reaction` or `autorun` to respond to prop changes:
+`this.props` is reactive—your component re-renders when accessed props change. Use `reaction` or `autorun` to respond to prop changes:
 
 ```tsx
 onMount() {

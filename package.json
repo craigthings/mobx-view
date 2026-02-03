@@ -1,6 +1,6 @@
 {
   "name": "mobx-view",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A minimal library that brings MobX reactivity to React components with a familiar class-based API",
   "author": "",
   "repository": {
