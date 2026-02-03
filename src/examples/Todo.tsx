@@ -1,0 +1,75 @@
+import { reaction } from 'mobx';
+import { View, createView } from './mobx-view';
+
+interface TodoItem {
+  id: number;
+  text: string;
+  done: boolean;
+}
+
+interface TodoProps {
+  title: string;
+  initialTodos?: TodoItem[];
+  onCountChange?: (count: number) => void;
+}
+
+class TodoView extends View<TodoProps> {
+  todos: TodoItem[] = [];
+  input = '';
+  inputRef = this.ref<HTMLInputElement>();
+
+  get completedCount() {
+    return this.todos.filter(t => t.done).length;
+  }
+
+  onCreate() {
+    this.todos = this.props.initialTodos ?? [];
+  }
+
+  onMount() {
+    this.inputRef.current?.focus();
+
+    const dispose = reaction(
+      () => this.completedCount,
+      (count) => this.props.onCountChange?.(count)
+    );
+
+    return dispose;
+  }
+
+  add() {
+    if (!this.input.trim()) return;
+    this.todos.push({ id: Date.now(), text: this.input, done: false });
+    this.input = '';
+  }
+
+  toggle(id: number) {
+    const todo = this.todos.find(t => t.id === id);
+    if (todo) todo.done = !todo.done;
+  }
+
+  render() {
+    return (
+      <div>
+        <h2>{this.props.title}</h2>
+        <form onSubmit={e => { e.preventDefault(); this.add(); }}>
+          <input
+            ref={this.inputRef}
+            value={this.input}
+            onChange={e => this.input = e.target.value}
+          />
+        </form>
+        <ul>
+          {this.todos.map(todo => (
+            <li key={todo.id} onClick={() => this.toggle(todo.id)}>
+              {todo.done ? '✓' : '○'} {todo.text}
+            </li>
+          ))}
+        </ul>
+        <p>{this.completedCount} of {this.todos.length} done</p>
+      </div>
+    );
+  }
+}
+
+export const Todo = createView(TodoView);
