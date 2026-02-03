@@ -1,5 +1,5 @@
 import { reaction } from 'mobx';
-import { View, createView } from './mobx-view';
+import { View, createView } from '../src';
 
 interface TodoItem {
   id: number;
@@ -50,23 +50,30 @@ class TodoView extends View<TodoProps> {
 
   render() {
     return (
-      <div>
+      <div className="todo-container">
         <h2>{this.props.title}</h2>
         <form onSubmit={e => { e.preventDefault(); this.add(); }}>
           <input
             ref={this.inputRef}
             value={this.input}
             onChange={e => this.input = e.target.value}
+            placeholder="Add a todo..."
           />
+          <button type="submit">Add</button>
         </form>
         <ul>
           {this.todos.map(todo => (
-            <li key={todo.id} onClick={() => this.toggle(todo.id)}>
-              {todo.done ? '✓' : '○'} {todo.text}
+            <li 
+              key={todo.id} 
+              onClick={() => this.toggle(todo.id)}
+              className={todo.done ? 'done' : ''}
+            >
+              <span className="checkbox">{todo.done ? '✓' : '○'}</span>
+              <span className="text">{todo.text}</span>
             </li>
           ))}
         </ul>
-        <p>{this.completedCount} of {this.todos.length} done</p>
+        <p className="count">{this.completedCount} of {this.todos.length} done</p>
       </div>
     );
   }
