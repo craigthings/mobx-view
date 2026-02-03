@@ -88,10 +88,14 @@ function makeViewObservable<T extends View>(instance: T, autoBind: boolean) {
   makeObservable(instance, annotations);
 }
 
-export function createView<P extends object, V extends View<P>>(
+type PropsOf<V> = V extends View<infer P> ? P : object;
+
+export function createView<V extends View<any>>(
   ViewClass: new () => V,
   templateOrOptions?: ((vm: V) => JSX.Element) | { autoObservable?: boolean }
 ) {
+  type P = PropsOf<V>;
+
   const template = typeof templateOrOptions === 'function' ? templateOrOptions : undefined;
   const options = typeof templateOrOptions === 'object' ? templateOrOptions : {};
   const { autoObservable = true } = options;
