@@ -8,26 +8,10 @@ import {
   mountBehavior,
   unmountBehavior,
 } from './behavior';
+import { globalConfig } from './config';
 
-/**
- * Global configuration options for mobx-mantle
- */
-export interface MantleConfig {
-  /** Whether to automatically make View instances observable (default: true) */
-  autoObservable?: boolean;
-}
-
-const globalConfig: MantleConfig = {
-  autoObservable: true,
-};
-
-/**
- * Configure global defaults for mobx-mantle.
- * Settings can still be overridden per-view in createView options.
- */
-export function configure(config: MantleConfig): void {
-  Object.assign(globalConfig, config);
-}
+// Re-export config utilities
+export { configure, type MantleConfig } from './config';
 
 export class View<P = {}> {
   /** @internal */

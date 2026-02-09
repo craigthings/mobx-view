@@ -1,4 +1,5 @@
 import { makeObservable, observable, computed, action, type AnnotationsMap } from 'mobx';
+import { globalConfig } from './config';
 
 /** Symbol marker to identify behavior instances */
 export const BEHAVIOR_MARKER = Symbol('behavior');
@@ -155,7 +156,8 @@ type BehaviorArgs<T extends new (...args: any[]) => any> =
  * ```
  */
 export function createBehavior<T extends new (...args: any[]) => any>(
-  Def: T
+  Def: T,
+  options?: { autoObservable?: boolean }
 ): new (...args: BehaviorArgs<T>) => InstanceType<T> {
   const BehaviorClass = class extends (Def as any) {
     static [BEHAVIOR_MARKER] = true;
@@ -168,8 +170,14 @@ export function createBehavior<T extends new (...args: any[]) => any>(
         this.onCreate(...args);
       }
       
-      // Make the instance observable (after onCreate so all properties exist)
-      makeBehaviorObservable(this);
+      // Make the instance observable (respects global config and per-behavior options)
+      const autoObservable = options?.autoObservable ?? globalConfig.autoObservable;
+      if (autoObservable) {
+        makeBehaviorObservable(this);
+      } else {
+        // For decorator users: applies decorator metadata
+        makeObservable(this);
+      }
     }
   };
 
