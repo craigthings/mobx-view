@@ -55,7 +55,7 @@ export class View<P = {}> {
   /** @internal */
   _behaviors: BehaviorEntry[] = [];
 
-  onCreate?(): void;
+  onCreate?(props: P): void;
   onLayoutMount?(): void | (() => void);
   onMount?(): void | (() => void);
   onUnmount?(): void;
@@ -241,7 +241,16 @@ export function createView<V extends View<any>>(
         makeObservable(instance);
       }
 
-      instance.onCreate?.();
+      // Proxy forwards property access to instance.props, so reads are tracked
+      // by MobX when used in reactions/computeds (same behavior as this.props)
+      const reactiveProps = new Proxy({} as P, {
+        get: (_, key) => (instance.props as any)[key],
+        has: (_, key) => key in (instance.props as any),
+        ownKeys: () => Reflect.ownKeys(instance.props as object),
+        getOwnPropertyDescriptor: (_, key) =>
+          Reflect.getOwnPropertyDescriptor(instance.props as object, key),
+      });
+      instance.onCreate?.(reactiveProps);
       vmRef.current = instance;
       prevPropsRef.current = props as P;
     }
