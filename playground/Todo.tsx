@@ -1,7 +1,7 @@
 import { reaction } from 'mobx';
 import { View, createView } from '../src';
 import { Counter } from './Counter';
-import { withWindowSize } from './WindowSizeBehavior';
+import { withWindowSize } from './withWindowSize';
 
 // ─── HMR Test ───
 // To test child edit doesn't affect parent:

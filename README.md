@@ -183,10 +183,9 @@ export default createView(Todo, (vm) => (
 For teams that prefer explicit annotations over auto-observable, Mantle provides its own decorators. These are lightweight metadata collectors—no `accessor` keyword required.
 
 ```tsx
-import { View, view, observable, action, computed } from 'mobx-mantle';
+import { View, createView, observable, action, computed } from 'mobx-mantle';
 
-@view
-export default class Todo extends View<Props> {
+class Todo extends View<Props> {
   @observable todos: TodoItem[] = [];
   @observable input = '';
 
@@ -203,40 +202,24 @@ export default class Todo extends View<Props> {
     return /* ... */;
   }
 }
+
+export default createView(Todo);
 ```
 
 **Key differences from auto-observable mode:**
 - Only decorated fields are reactive (undecorated fields are inert)
-- `@view` replaces `createView()` wrapping
 - Methods are still auto-bound for stable `this` references
 
 ### Available Decorators
 
 | Decorator | Purpose |
 |-----------|---------|
-| `@view` | Class decorator — replaces `createView()` |
 | `@observable` | Deep observable field |
 | `@observable.ref` | Reference-only observation |
 | `@observable.shallow` | Shallow observation (add/remove only) |
 | `@observable.struct` | Structural equality comparison |
 | `@action` | Action method (auto-bound) |
 | `@computed` | Computed getter (optional—getters are computed by default) |
-
-### Using `createView` with Decorators
-
-You can also use decorators with `createView` instead of `@view`:
-
-```tsx
-import { View, createView, observable, action } from 'mobx-mantle';
-
-class Todo extends View<Props> {
-  @observable todos: TodoItem[] = [];
-  @action add() { /* ... */ }
-  render() { /* ... */ }
-}
-
-export default createView(Todo);
-```
 
 ### MobX Decorators (Legacy)
 
@@ -484,7 +467,7 @@ The naming convention:
 Call the factory function (no `new` keyword) in your View. The `with` prefix signals that the View manages this behavior's lifecycle:
 
 ```tsx
-import { withWindowSize } from './WindowSizeBehavior';
+import { withWindowSize } from './withWindowSize';
 
 class Responsive extends View<Props> {
   windowSize = withWindowSize(768);
@@ -538,10 +521,10 @@ export const withFetch = createBehavior(FetchBehavior);
 ```
 
 ```tsx
+import { View, createView } from 'mobx-mantle';
 import { withFetch } from './FetchBehavior';
 import { withWindowSize } from './WindowSizeBehavior';
 
-@view
 class Dashboard extends View<Props> {
   users = withFetch('/api/users', 10000);
   posts = withFetch('/api/posts');
@@ -556,6 +539,8 @@ class Dashboard extends View<Props> {
     );
   }
 }
+
+export default createView(Dashboard);
 
 ### Behavior Lifecycle
 
@@ -625,29 +610,6 @@ class MyBehavior extends Behavior {
 export const withMyBehavior = createBehavior(MyBehavior);
 
 // Usage: withMyBehavior('hello')
-```
-
-### `@behavior`
-
-Class decorator alternative to `createBehavior()`. Note: requires unconventional class naming.
-
-```tsx
-@behavior
-export default class withMyBehavior extends Behavior {
-  onCreate(value: string) { /* ... */ }
-}
-```
-
-### `@view`
-
-Class decorator that creates a React component from a View class. Use with Mantle decorators.
-
-```tsx
-@view
-export default class MyView extends View<Props> {
-  @observable count = 0;
-  render() { /* ... */ }
-}
 ```
 
 ### `createView(ViewClass, templateOrOptions?)`

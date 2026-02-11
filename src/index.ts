@@ -8,9 +8,7 @@ export {
   createView,
   createBehavior,
   
-  // Decorators
-  view,
-  behavior,
+  // Decorators (for explicit annotation mode)
   observable,
   action,
   computed,

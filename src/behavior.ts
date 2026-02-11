@@ -14,39 +14,17 @@ const BEHAVIOR_EXCLUDES = new Set([
 ]);
 
 /**
- * Base class for behaviors. Provides lifecycle method signatures and IDE autocomplete.
+ * Base class for behaviors. Provides lifecycle method signatures for IDE autocomplete.
  * Extend this class and wrap with createBehavior() to create a factory.
  * 
- * @example Defining a behavior
+ * @example
  * ```tsx
- * class FetchTrait extends Behavior {
- *   url!: string;
- *   interval = 5000;
- *   data: Item[] = [];
- *   loading = false;
- * 
- *   onCreate(url: string, interval = 5000) {
- *     this.url = url;
- *     this.interval = interval;
- *   }
- * 
- *   onMount() {
- *     this.fetchData();
- *     const id = setInterval(() => this.fetchData(), this.interval);
- *     return () => clearInterval(id);
- *   }
+ * class WindowSizeBehavior extends Behavior {
+ *   width = window.innerWidth;
+ *   onCreate(breakpoint = 768) { ... }
+ *   onMount() { ... }
  * }
- * 
- * export const withFetch = createBehavior(FetchTrait);
- * ```
- * 
- * @example Using in a View
- * ```tsx
- * @view
- * class Dashboard extends View<Props> {
- *   users = withFetch('/api/users', 10000);
- *   posts = withFetch('/api/posts');
- * }
+ * export const withWindowSize = createBehavior(WindowSizeBehavior);
  * ```
  */
 export class Behavior {
@@ -58,9 +36,9 @@ export class Behavior {
 
 /**
  * Makes a behavior instance observable, handling inheritance properly.
- * Similar to makeViewObservable but for behaviors.
+ * Works with classes that extend Behavior or plain classes.
  */
-function makeBehaviorObservable<T extends Behavior>(instance: T): void {
+function makeBehaviorObservable<T extends object>(instance: T): void {
   const annotations: AnnotationsMap<T, never> = {} as AnnotationsMap<T, never>;
 
   // Collect own properties → observable
@@ -79,9 +57,9 @@ function makeBehaviorObservable<T extends Behavior>(instance: T): void {
     (annotations as any)[key] = observable;
   }
 
-  // Walk prototype chain up to (but not including) Behavior
+  // Walk prototype chain up to (but not including) Behavior or Object
   let proto = Object.getPrototypeOf(instance);
-  while (proto && proto !== Behavior.prototype) {
+  while (proto && proto !== Behavior.prototype && proto !== Object.prototype) {
     const descriptors = Object.getOwnPropertyDescriptors(proto);
 
     for (const [key, descriptor] of Object.entries(descriptors)) {
@@ -153,7 +131,6 @@ type BehaviorArgs<T extends new (...args: any[]) => any> =
  * 
  * @example Using in a View
  * ```tsx
- * @view
  * class Editor extends View<Props> {
  *   canvas = this.ref<HTMLCanvasElement>();
  *   
@@ -161,14 +138,23 @@ type BehaviorArgs<T extends new (...args: any[]) => any> =
  *   drag = withDrag(this.canvas);
  *   autosave = withAutosave('/api/save', 5000);
  * }
+ * export default createView(Editor);
  * ```
  * 
  * The `with` prefix convention signals that the view manages this behavior's lifecycle.
  */
+/**
+ * Type that supports both `new` and direct call syntax
+ */
+type BehaviorFactory<Args extends any[], Instance> = {
+  new (...args: Args): Instance;
+  (...args: Args): Instance;
+};
+
 export function createBehavior<T extends new (...args: any[]) => any>(
   Def: T,
   options?: { autoObservable?: boolean }
-): (...args: BehaviorArgs<T>) => InstanceType<T> {
+): BehaviorFactory<BehaviorArgs<T>, InstanceType<T>> {
   // Internal class that wraps the user's behavior definition
   const BehaviorClass = class extends (Def as any) {
     static [BEHAVIOR_MARKER] = true;
@@ -195,49 +181,18 @@ export function createBehavior<T extends new (...args: any[]) => any>(
   // Preserve the original class name for debugging
   Object.defineProperty(BehaviorClass, 'name', { value: Def.name });
 
-  // Return a factory function instead of the class
-  const factory = (...args: any[]) => new BehaviorClass(...args);
-  
-  // Preserve name on the factory for debugging
-  Object.defineProperty(factory, 'name', { value: Def.name });
-  
-  return factory as (...args: BehaviorArgs<T>) => InstanceType<T>;
+  // Use Proxy to make the class callable without `new`
+  // This allows both: withWindowSize(768) and new withWindowSize(768)
+  return new Proxy(BehaviorClass, {
+    apply(_target, _thisArg, args) {
+      return new BehaviorClass(...args);
+    },
+  }) as unknown as BehaviorFactory<BehaviorArgs<T>, InstanceType<T>>;
 }
 
-/**
- * Class decorator that creates a behavior factory. Alternative to createBehavior().
- * 
- * @example
- * ```tsx
- * import { Behavior, behavior } from 'mobx-mantle';
- * 
- * @behavior
- * export default class withWindowSize extends Behavior {
- *   width = window.innerWidth;
- *   height = window.innerHeight;
- *   
- *   onCreate(breakpoint = 768) {
- *     this.breakpoint = breakpoint;
- *   }
- *   
- *   onMount() {
- *     window.addEventListener('resize', this.handleResize);
- *     return () => window.removeEventListener('resize', this.handleResize);
- *   }
- * }
- * 
- * // Usage: withWindowSize(768)
- * ```
- */
-export function behavior<T extends new (...args: any[]) => any>(
-  Def: T,
-  _context: ClassDecoratorContext
-): (...args: BehaviorArgs<T>) => InstanceType<T> {
-  return createBehavior(Def);
-}
 
 /**
- * Checks if a value is a behavior instance created by createBehavior()/@behavior
+ * Checks if a value is a behavior instance created by createBehavior()
  */
 export function isBehavior(value: unknown): boolean {
   if (value === null || typeof value !== 'object') return false;

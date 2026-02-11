@@ -109,7 +109,7 @@ export class View<P = {}> {
 export { View as ViewModel };
 
 // Re-export from behavior module
-export { createBehavior, behavior, Behavior } from './behavior';
+export { createBehavior, Behavior } from './behavior';
 
 // Base class members that should not be made observable
 const BASE_EXCLUDES = new Set([
@@ -385,30 +385,3 @@ export function createView<V extends View<any>>(
   return memo(Component) as typeof Component;
 }
 
-/**
- * Class decorator that replaces createView() for a cleaner syntax.
- * 
- * @example
- * ```tsx
- * import { View, view, observable, action } from 'mobx-mantle';
- * 
- * @view
- * export default class Counter extends View {
- *   @observable count = 0;
- *   
- *   @action increment() {
- *     this.count++;
- *   }
- *   
- *   render() {
- *     return <button onClick={this.increment}>{this.count}</button>;
- *   }
- * }
- * ```
- */
-export function view<V extends View<any>>(
-  ViewClass: new () => V,
-  _context: ClassDecoratorContext
-) {
-  return createView(ViewClass, { autoObservable: false }) as unknown as typeof ViewClass;
-}
